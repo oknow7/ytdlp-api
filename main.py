@@ -9,17 +9,20 @@ app = Flask(__name__)
 
 YT_DLP = shutil.which('yt-dlp') or shutil.which('yt-dlp.exe') or '/usr/local/bin/yt-dlp'
 FFMPEG = shutil.which('ffmpeg') or shutil.which('ffmpeg.exe') or '/usr/local/bin/ffmpeg'
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+COOKIES_FILE = os.path.join(BASE_DIR, 'cookies.txt')
 UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 
+if not os.path.exists(COOKIES_FILE):
+    COOKIES_FILE = os.environ.get('COOKIES_FILE', '')
+
 def base_args():
-    return [
-        '--user-agent', UA,
-        '--extractor-args', 'youtube:player_client=android,web',
-        '--add-headers', 'Accept-Language:en-US,en;q=0.9',
-        '--no-warnings',
-        '--ignore-errors',
-    ]
+    args = ['--user-agent', UA, '--no-warnings', '--ignore-errors']
+    if COOKIES_FILE and os.path.exists(COOKIES_FILE):
+        args += ['--cookies', COOKIES_FILE]
+    else:
+        args += ['--extractor-args', 'youtube:player_client=web_embedded']
+    return args
 
 def run_ytdlp(args):
     cmd = [YT_DLP] + base_args() + args
@@ -147,7 +150,7 @@ def cleanup():
 def index():
     return jsonify({
         'name': '90Tools Downloader API',
-        'version': '2.0',
+        'version': '2.1',
         'endpoints': {
             '/health': 'Check server status',
             '/api/info?url=...': 'Get video info',
